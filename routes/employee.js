@@ -8,7 +8,6 @@ router.post('/create', async function(req, res, next) {
   
     try {
         const db = await connectDb();
-        console.log(db)
         await db.collection("users").insertOne({available : true ,...req.body});
         await closeConnection();
 
@@ -41,14 +40,14 @@ router.put("/update/:id", async function(req,res,next){
     try {
         const db = await connectDb();
         delete req.body._id;
-        const user = await db.collection("users").updateOne({_id : mongodb.ObjectId(req.params.id)},{$set : req.body})
+        await db.collection("users").updateOne({_id : mongodb.ObjectId(req.params.id)},{$set : req.body})
         await closeConnection();
 
         res.json({message : "Employee Updated Successfully"})
 
     } catch (error) {
         console.log(error)
-        res.status(500).json({message : "Something Went Wrong in Reading Employee"})
+        res.status(500).json({message : "Something Went Wrong in Updating Employee"})
     }
 })
 
@@ -57,20 +56,21 @@ router.put("/assign/:id", async function(req,res,next){
 
     try {
         const db = await connectDb();
-        var [available] = req.body;
-        await db.collection("users").updateOne({_id : mongodb.ObjectId(req.params.id)},{$set : {available : available.available}})
-        await closeConnection();
+        var { available, task } = req.body;
 
-        if(req.body){
-            res.json({message : "Work Unassigned"})
-        }else{
-            res.json({message : "Work Assigned"})
+        if (available) {
+            await db.collection("users").updateOne({ _id: mongodb.ObjectId(req.params.id) }, { $set: { available }, $unset: { task: 1 } })
+            await closeConnection();
+            res.json({ message: "Work Unassigned" })
+        } else {
+            await db.collection("users").updateOne({ _id: mongodb.ObjectId(req.params.id) }, { $set: { available, task } })
+            await closeConnection();
+            res.json({ message: "Work Assigned" })
         }
-        
 
     } catch (error) {
         console.log(error)
-        res.status(500).json({message : "Something Went Wrong in Reading Employee"})
+        res.status(500).json({message : "Something Went Wrong in Assigning Employee"})
     }
 })
 
@@ -86,7 +86,7 @@ router.delete("/delete/:id", async function(req,res,next){
 
     } catch (error) {
         console.log(error)
-        res.status(500).json({message : "Something Went Wrong in Reading Employee"})
+        res.status(500).json({message : "Something Went Wrong in Deleting Employee"})
     }
 })
 
